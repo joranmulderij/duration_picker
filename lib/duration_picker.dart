@@ -164,10 +164,10 @@ class _DialPainter extends CustomPainter {
 }
 
 class _Dial extends StatefulWidget {
-  const _Dial(
+  _Dial(
       {required this.duration, required this.onChanged, this.snapToMins = 1.0});
 
-  final Duration duration;
+  Duration duration;
   final ValueChanged<Duration> onChanged;
 
   /// The resolution of mins of the dial, i.e. if snapToMins = 5.0, only durations of 5min intervals will be selectable.
@@ -393,6 +393,54 @@ class _DialState extends State<_Dial> with SingleTickerProviderStateMixin {
     _center = null;
   }
 
+  void _showDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Time in Minutes:'),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: TextEditingController(
+                  text: widget.duration.inMinutes.toString()),
+              keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+              onChanged: (text) {
+                setState(() {
+                  widget.duration = Duration(minutes: int.parse(text));
+                  widget.onChanged(widget.duration);
+                  _turningAngle =
+                      _kPiByTwo - widget.duration.inMinutes / 60.0 * _kTwoPi;
+                  _hours = _hourHand();
+                  _minutes = _minuteHand();
+
+                  _animateTo(_getThetaForDuration(widget.duration));
+                });
+              },
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text('OK'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   List<TextPainter> _buildMinutes(TextTheme textTheme) {
     final style = textTheme.subtitle1;
 
@@ -446,6 +494,7 @@ class _DialState extends State<_Dial> with SingleTickerProviderStateMixin {
         onPanUpdate: _handlePanUpdate,
         onPanEnd: _handlePanEnd,
         onTapUp: _handleTapUp,
+        onTap: _showDialog,
         child: CustomPaint(
           painter: _DialPainter(
             pct: _pct,
